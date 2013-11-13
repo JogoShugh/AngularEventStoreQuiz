@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>Greg Young's Training Quiz</title>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular.js"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/angularjs/1.0.7/angular-resource.js"></script>
+  <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.4.0.js"></script>  
+  <script src="uuid.js"></script>
+  <script src="app.js"></script>
+  <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body ng-app="quizApp" ng-controller="quizController">
+  <div class="container-fluid">
+    <tabset>
+      <tab>
+        <tab-heading>
+          Quiz
+        </tab-heading>
+        <h2>Greg Young's Training Quiz</h2>
+        <div ng-show='quizVisible'>
+          <h4>Your name:</h4>
+          <p><input ng-model='userName.value' type='text' placeholder='Your name' /></p>
+          <input type='checkbox' ng-init='showCurrentAnswerCounts = false'
+            ng-click='showCurrentAnswerCounts = !showCurrentAnswerCounts'> Show current answer counts?
+          <div ng-repeat='question in questions' class='well'>
+            <h3>{{question.question}}</h3>
+            <div ng-repeat='choice in question.choices'><input type='radio' name='{{question.id}}' value='{{$index}}' 
+              ng-click='selectAnswer(question, choice)' /> {{choice.text}} 
+              <span class='currentAnswers' ng-show='showCurrentAnswerCounts'>({{getCurrentAnswerCount(question.id, choice.text)}})</span></div>
+          </div>
+          <a class='btn btn-primary' ng-click='sendAnswers()'>Send your answers</a>
+        </div>
+        <div ng-hide='quizVisible'>
+          <span class='label label-success'>{{successMessage}}</span>
+        </div>
+      </tab>
+      <tab>
+        <tab-heading>
+          Results Monitor
+        </tab-heading>
+        <div>
+          <div class='well well-small' ng-repeat='answer in answerStream'>{{answer.content.data.user.value}} answered
+           <span class='label'>{{answer.content.data.answer.choice}}</span> for question {{answer.content.data.answer.questionId}} 
+              <span class='label {{answer.content.data.answer.correct == true && "label-success" || "label-important"}}'>{{answer.content.data.answer.correct == true && 'correct' || 'wrong'}}</span>
+          </div>
+        </div>
+      </tab>
+  </tabset>
+  </div>
+</body>  
+</html>
