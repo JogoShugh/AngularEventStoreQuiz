@@ -9,6 +9,95 @@
     correct: correct
     selected: false
 
+  quizApp.controller 'quizController', ($rootScope, $scope, $http, Poller, questions) ->
+    $scope.questions = questions
+    $scope.question = questions[0]
+    $scope.questionIndex = 0;
+    $scope.answerPrevious = {};
+
+    getAnswerStreamUri = (lastUri, result) ->
+      if not lastUri? or not result?
+        return serverRoot + '/streams/answers/head/backward/20?embed=content'
+      else
+        return result.data.links[4].uri + '?embed=content'  if result.data.links[4].relation is 'previous'
+      lastUri
+    
+    updateAnswersArray = (result) ->
+      $scope.answerStream.unshift(result.data.entries...)
+
+    $scope.userName = value: 'Guest' + (Math.floor(Math.random() * 100000))
+    
+    pollCurrentAnswers = Poller(2000, ->
+      serverRoot + '/projection/QuestionAnswerCoutns2/state'
+    )
+
+    $scope.currentAnswers = pollCurrentAnswers.data
+    
+    $scope.answerStream = []
+    
+    pollAnswerStream = Poller(2000, getAnswerStreamUri, updateAnswersArray)
+    
+    $scope.quizVisible = true
+    
+    $scope.getCurrentAnswerCount = (questionId, choiceText) ->
+      try
+        count = $scope.currentAnswers.response.questions[questionId].choices[choiceText]
+        return 0 if not count?
+        return count
+      catch ex
+        return 0
+
+    $scope.selectAnswer = (question, choice) ->
+      for currentChoice in question.choices
+        currentChoice.selected = false unless currentChoice is choice
+      choice.selected = true
+
+    $scope.answerSubmit = ->
+      answers = []
+      answer =
+        eventId: uuid.v4()
+        eventType: 'Answer'
+        data:
+          user: $scope.userName
+          answer:
+            questionId: $scope.question.id
+            text: $scope.question.text
+      for choice in $scope.question.choices
+        if choice.selected
+          answer.data.answer.choice = choice.text
+          answer.data.answer.correct = choice.correct
+      answers.push answer
+      $scope.answerPrevious = answer.data.answer
+
+      $http.post(serverRoot + '/streams/answers', answers).success ->
+        if $scope.questionIndex < $scope.questions.length
+          $scope.questionIndex++
+          $scope.question = $scope.questions[$scope.questionIndex]
+        else
+          $scope.finishedMessage = "All finished. Click the monitor tab to see peers' results!"
+          $scope.quizVisible = false
+
+    $scope.sendAnswers = ->
+      answers = []
+      for question in $scope.questions
+        answer =
+          eventId: uuid.v4()
+          eventType: 'Answer'
+          data:
+            user: $scope.userName
+            answer:
+              questionId: question.id
+              text: question.text
+        for choice in question.choices
+          if choice.selected
+            answer.data.answer.choice = choice.text
+            answer.data.answer.correct = choice.correct
+        answers.push answer
+
+      $http.post(serverRoot + '/streams/answers', answers).success ->
+        $scope.successMessage = 'Success!'
+        $scope.quizVisible = false
+
   quizApp.controller 'questionController', ($rootScope, $scope, questions) ->
     $scope.questions = questions
     $scope.questionTextPending = { value: '' }
@@ -71,63 +160,7 @@
       question.question = text
 
     $scope.questionTextRevert = (question) ->
-      $scope.questionTextPending.value = question.question
-
-  quizApp.controller 'quizController', ($rootScope, $scope, $http, Poller, questions) ->
-    $scope.questions = questions
-    getAnswerStreamUri = (lastUri, result) ->
-      if not lastUri? or not result?
-        return serverRoot + '/streams/answers/head/backward/20?embed=content'
-      else
-        return result.data.links[4].uri + '?embed=content'  if result.data.links[4].relation is 'previous'
-      lastUri
-    updateAnswersArray = (result) ->
-      $scope.answerStream.unshift(result.data.entries...)
-
-    $scope.userName = value: 'Guest' + (Math.floor(Math.random() * 100000))
-    
-    pollCurrentAnswers = Poller(2000, ->
-      serverRoot + '/projection/QuestionAnswerCoutns2/state'
-    )
-    $scope.currentAnswers = pollCurrentAnswers.data
-    
-    $scope.answerStream = []
-    pollAnswerStream = Poller(2000, getAnswerStreamUri, updateAnswersArray)
-    
-    $scope.quizVisible = true
-    $scope.getCurrentAnswerCount = (questionId, choiceText) ->
-      try
-        count = $scope.currentAnswers.response.questions[questionId].choices[choiceText]
-        return 0 if not count?
-        return count
-      catch ex
-        return 0
-
-    $scope.selectAnswer = (question, choice) ->
-      for currentChoice in question.choices
-        currentChoice.selected = false unless currentChoice is choice
-      choice.selected = true
-
-    $scope.sendAnswers = ->
-      answers = []
-      for question in $scope.questions
-        answer =
-          eventId: uuid.v4()
-          eventType: 'Answer'
-          data:
-            user: $scope.userName
-            answer:
-              questionId: question.id
-              text: question.text
-        for choice in question.choices
-          if choice.selected
-            answer.data.answer.choice = choice.text
-            answer.data.answer.correct = choice.correct
-        answers.push answer
-
-      $http.post(serverRoot + '/streams/answers', answers).success ->
-        $scope.successMessage = 'Success!'
-        $scope.quizVisible = false
+      $scope.questionTextPending.value = question.question        
 
   quizApp.factory 'Poller', ($http, $timeout) ->
     createPoller = (interval, getUri, callback) ->

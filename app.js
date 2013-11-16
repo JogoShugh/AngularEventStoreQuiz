@@ -14,6 +14,127 @@
         selected: false
       };
     };
+    quizApp.controller('quizController', function($rootScope, $scope, $http, Poller, questions) {
+      var getAnswerStreamUri, pollAnswerStream, pollCurrentAnswers, updateAnswersArray;
+      $scope.questions = questions;
+      $scope.question = questions[0];
+      $scope.questionIndex = 0;
+      $scope.answerPrevious = {};
+      getAnswerStreamUri = function(lastUri, result) {
+        if ((lastUri == null) || (result == null)) {
+          return serverRoot + '/streams/answers/head/backward/20?embed=content';
+        } else {
+          if (result.data.links[4].relation === 'previous') {
+            return result.data.links[4].uri + '?embed=content';
+          }
+        }
+        return lastUri;
+      };
+      updateAnswersArray = function(result) {
+        var _ref;
+        return (_ref = $scope.answerStream).unshift.apply(_ref, result.data.entries);
+      };
+      $scope.userName = {
+        value: 'Guest' + (Math.floor(Math.random() * 100000))
+      };
+      pollCurrentAnswers = Poller(2000, function() {
+        return serverRoot + '/projection/QuestionAnswerCoutns2/state';
+      });
+      $scope.currentAnswers = pollCurrentAnswers.data;
+      $scope.answerStream = [];
+      pollAnswerStream = Poller(2000, getAnswerStreamUri, updateAnswersArray);
+      $scope.quizVisible = true;
+      $scope.getCurrentAnswerCount = function(questionId, choiceText) {
+        var count, ex;
+        try {
+          count = $scope.currentAnswers.response.questions[questionId].choices[choiceText];
+          if (count == null) {
+            return 0;
+          }
+          return count;
+        } catch (_error) {
+          ex = _error;
+          return 0;
+        }
+      };
+      $scope.selectAnswer = function(question, choice) {
+        var currentChoice, _i, _len, _ref;
+        _ref = question.choices;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          currentChoice = _ref[_i];
+          if (currentChoice !== choice) {
+            currentChoice.selected = false;
+          }
+        }
+        return choice.selected = true;
+      };
+      $scope.answerSubmit = function() {
+        var answer, answers, _i, _len, _ref;
+        answers = [];
+        answer = {
+          eventId: uuid.v4(),
+          eventType: 'Answer',
+          data: {
+            user: $scope.userName,
+            answer: {
+              questionId: $scope.question.id,
+              text: $scope.question.text
+            }
+          }
+        };
+        _ref = $scope.question.choices;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          choice = _ref[_i];
+          if (choice.selected) {
+            answer.data.answer.choice = choice.text;
+            answer.data.answer.correct = choice.correct;
+          }
+        }
+        answers.push(answer);
+        $scope.answerPrevious = answer.data.answer;
+        return $http.post(serverRoot + '/streams/answers', answers).success(function() {
+          if ($scope.questionIndex < $scope.questions.length) {
+            $scope.questionIndex++;
+            return $scope.question = $scope.questions[$scope.questionIndex];
+          } else {
+            $scope.finishedMessage = "All finished. Click the monitor tab to see peers' results!";
+            return $scope.quizVisible = false;
+          }
+        });
+      };
+      return $scope.sendAnswers = function() {
+        var answer, answers, question, _i, _j, _len, _len1, _ref, _ref1;
+        answers = [];
+        _ref = $scope.questions;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          question = _ref[_i];
+          answer = {
+            eventId: uuid.v4(),
+            eventType: 'Answer',
+            data: {
+              user: $scope.userName,
+              answer: {
+                questionId: question.id,
+                text: question.text
+              }
+            }
+          };
+          _ref1 = question.choices;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            choice = _ref1[_j];
+            if (choice.selected) {
+              answer.data.answer.choice = choice.text;
+              answer.data.answer.correct = choice.correct;
+            }
+          }
+          answers.push(answer);
+        }
+        return $http.post(serverRoot + '/streams/answers', answers).success(function() {
+          $scope.successMessage = 'Success!';
+          return $scope.quizVisible = false;
+        });
+      };
+    });
     quizApp.controller('questionController', function($rootScope, $scope, questions) {
       var questionId;
       $scope.questions = questions;
@@ -104,90 +225,6 @@
       };
       return $scope.questionTextRevert = function(question) {
         return $scope.questionTextPending.value = question.question;
-      };
-    });
-    quizApp.controller('quizController', function($rootScope, $scope, $http, Poller, questions) {
-      var getAnswerStreamUri, pollAnswerStream, pollCurrentAnswers, updateAnswersArray;
-      $scope.questions = questions;
-      getAnswerStreamUri = function(lastUri, result) {
-        if ((lastUri == null) || (result == null)) {
-          return serverRoot + '/streams/answers/head/backward/20?embed=content';
-        } else {
-          if (result.data.links[4].relation === 'previous') {
-            return result.data.links[4].uri + '?embed=content';
-          }
-        }
-        return lastUri;
-      };
-      updateAnswersArray = function(result) {
-        var _ref;
-        return (_ref = $scope.answerStream).unshift.apply(_ref, result.data.entries);
-      };
-      $scope.userName = {
-        value: 'Guest' + (Math.floor(Math.random() * 100000))
-      };
-      pollCurrentAnswers = Poller(2000, function() {
-        return serverRoot + '/projection/QuestionAnswerCoutns2/state';
-      });
-      $scope.currentAnswers = pollCurrentAnswers.data;
-      $scope.answerStream = [];
-      pollAnswerStream = Poller(2000, getAnswerStreamUri, updateAnswersArray);
-      $scope.quizVisible = true;
-      $scope.getCurrentAnswerCount = function(questionId, choiceText) {
-        var count, ex;
-        try {
-          count = $scope.currentAnswers.response.questions[questionId].choices[choiceText];
-          if (count == null) {
-            return 0;
-          }
-          return count;
-        } catch (_error) {
-          ex = _error;
-          return 0;
-        }
-      };
-      $scope.selectAnswer = function(question, choice) {
-        var currentChoice, _i, _len, _ref;
-        _ref = question.choices;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          currentChoice = _ref[_i];
-          if (currentChoice !== choice) {
-            currentChoice.selected = false;
-          }
-        }
-        return choice.selected = true;
-      };
-      return $scope.sendAnswers = function() {
-        var answer, answers, question, _i, _j, _len, _len1, _ref, _ref1;
-        answers = [];
-        _ref = $scope.questions;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          question = _ref[_i];
-          answer = {
-            eventId: uuid.v4(),
-            eventType: 'Answer',
-            data: {
-              user: $scope.userName,
-              answer: {
-                questionId: question.id,
-                text: question.text
-              }
-            }
-          };
-          _ref1 = question.choices;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            choice = _ref1[_j];
-            if (choice.selected) {
-              answer.data.answer.choice = choice.text;
-              answer.data.answer.correct = choice.correct;
-            }
-          }
-          answers.push(answer);
-        }
-        return $http.post(serverRoot + '/streams/answers', answers).success(function() {
-          $scope.successMessage = 'Success!';
-          return $scope.quizVisible = false;
-        });
       };
     });
     quizApp.factory('Poller', function($http, $timeout) {

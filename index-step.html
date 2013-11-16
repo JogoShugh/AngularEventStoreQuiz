@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset=utf-8 />
+  <title>Greg Young's Training Quiz</title>
+  <script src="http://code.angularjs.org/snapshot/angular.min.js"></script>
+  <script src="http://code.angularjs.org/snapshot/angular-resource.min.js"></script>
+  <script src="http://angular-ui.github.io/bootstrap/ui-bootstrap-tpls-0.4.0.js"></script>
+  <script src="uuid.js"></script>
+  <script src="app.js"></script>
+  <link href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet" />
+  <link href="style.css" rel="stylesheet" />
+</head>
+<body ng-app='quizApp' ng-controller="quizController">
+  <div class="container-fluid">
+    <tabset>
+      <tab>
+        <tab-heading>
+          Quiz
+        </tab-heading>
+        <h2>Greg Young's Training Quiz</h2>
+        <div ng-show='quizVisible'>
+          <h4>Your name:</h4>
+          <p><input ng-model='userName.value' type='text' placeholder='Your name' /></p>
+          <p>
+          <input type='checkbox' ng-init='showCurrentAnswerCounts = false'
+            ng-click='showCurrentAnswerCounts = !showCurrentAnswerCounts'> <small>Show current answer counts?</small>
+          </p>
+          <div class='well'>
+            <h3>{{question.question}}</h3>
+            <p>
+              <span class='label label-info'>{{questionIndex + 1}} of {{questions.length}}</span>
+            </p>
+            <p ng-show='questionIndex > 0'>
+              Previous answer: <span class='label {{answerPrevious.correct == true && "label-success" || "label-important"}}'>{{answerPrevious.correct == true && 'correct' || 'wrong'}}</span>
+            </p>
+            <div class='well well-small'>
+              <div ng-repeat='choice in question.choices'>
+                <input type='radio' name='{{question.id}}' value='{{$index}}' 
+                ng-click='selectAnswer(question, choice)' /> {{choice.text}} 
+                <span class='currentAnswers' ng-show='showCurrentAnswerCounts'>({{getCurrentAnswerCount(question.id, choice.text)}})</span>
+              </div>
+            </div>            
+            <a class='btn btn-primary' ng-click='answerSubmit()'>Submit</a>
+          </div>
+        </div>
+        <div ng-hide='quizVisible'>
+          <span class='label label-success'>{{finishedMessage}}</span>
+        </div>
+      </tab>
+      <tab>
+        <tab-heading>
+          Results Monitor
+        </tab-heading>
+        <div>
+          <div class='well well-small' ng-repeat='answer in answerStream'>{{answer.content.data.user.value}} answered
+           <span class='label'>{{answer.content.data.answer.choice}}</span> for question {{answer.content.data.answer.questionId}} 
+              <span class='label {{answer.content.data.answer.correct == true && "label-success" || "label-important"}}'>{{answer.content.data.answer.correct == true && 'correct' || 'wrong'}}</span>
+          </div>
+        </div>
+      </tab>
+      <tab>
+        <tab-heading>Questions</tab-heading>
+          <div ng-controller='questionController'>
+            <hr />
+            <div class='well'>
+              <h2>Questions editor</h2>
+              <h3>Question</h3>
+              <textarea ng-model='questionTextPending.value' style='width:90%'></textarea>
+              <p>
+                <button class='btn btn-mini btn-success' ng-click='questionTextApply(selectedQuestion, questionTextPending.value)'
+                  ng-disabled='selectedQuestion.question == questionTextPending.value'
+                >apply</button>
+                <button class='btn btn-mini' ng-click='questionTextRevert(selectedQuestion)'
+                  ng-disabled='selectedQuestion.question == questionTextPending.value'
+                >revert</button>
+              </p>
+              <h4>Choices</h4>
+              <div ng-repeat='choice in selectedQuestion.choices'>
+                <textarea ng-model='choice.text' style='width:90%' /></textarea>
+                <p>
+                <button class='btn btn-mini {{getCorrectClass(choice.correct)}}' ng-click='setChoiceCorrect(selectedQuestion, choice)'>{{getCorrectLabel(choice.correct)}}</button> <button class='btn btn-mini btn-danger' ng-click='choiceRemove(selectedQuestion, choice)'>remove</button>
+                </p>
+              </div>
+              <button class='btn btn-mini btn-primary' ng-click='choiceNewAdd()'>add choice</button>
+              <div ng-repeat='choice in choices.newPending'>
+                <textarea ng-model='choice.text' style='width:90%' /></textarea>
+                <p>
+                  <button class='btn btn-mini btn-primary' ng-click='choiceNewSave(choice)'>save</button> 
+                  <button class='btn btn-mini btn-danger' ng-click='choiceNewDiscard(choice)'>discard</button>
+                </p>
+              </div>
+            </div>
+            <hr />
+            <div class='well'>
+              <div ng-repeat='question in questions'>
+                <h4>{{question.question}}</h4>
+                <button class='btn btn-mini btn-primary' ng-click='selectQuestion(question)'>edit</button>
+                <button class='btn btn-mini btn-danger' ng-click='questionRemove(question)'>remove</button>
+              </div>
+              <p>
+                <br />
+                <button class='btn btn-success' ng-click='questionNewAdd()'>add question</button>
+              </p>
+            </div>    
+          </div>
+        </div>        
+      </tab>
+  </tabset>
+  </div>
+</body>  
+</html>
