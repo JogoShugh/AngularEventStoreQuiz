@@ -12,4 +12,4 @@ Example of AngularJS + EventStore for a real-time quiz app
 * Type `. ./build.sh`
 * Modify run.sh to point to your EventStore location
 * Type `. ./run.sh`
-* Navigate in your browser to `http://localhost:3030/index-step.html`
+* Navigate in your browser to `[http://localhost:3030/index-step.html](http://localhost:3030/index-step.html)`
