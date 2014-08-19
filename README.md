@@ -5,7 +5,7 @@ Example of AngularJS + EventStore for a real-time quiz app
 
 # Getting started
 
-* You need to have EventStore running locally on the default port
+* You need to have [EventStore](http://geteventstore.com/) running locally on the default port, with projections enabled
 * Create the projections from `config/projections.js` within EventStore
 * Make sure you have Node.js installed
 * Type `npm install`
