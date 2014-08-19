@@ -26,6 +26,16 @@ Here's what it looks like in action:
 * Continue taking the quiz, one question at a time.
 * If you open a third browser and check the **Show current answer counts**, you'll see the counts update in real-time as other people select a given answer choice. This observes the **QuestionAnswerCounts** projection.
 
+# Known issues
+
+The **Questions** tab is supposed to let you edit Questions. But, it's broken.
+
+There are some challenges and opportunities to think about when using Events and an app like this:
+
+* When someone edits a Question, that is an Event, right?
+ * Therefore, the previous attempts at that question in a particular version are more related to each other than are any new attempts based upon the edit.
+* This opens up a lot of questions as to how to design the data model correctly to beneft from analyzing behavior based upon a continually evolving set of questions and answer choices.
+
 # Next steps
 
 Oh I don't know...reimplement with MeteorJS :-D
