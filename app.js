@@ -3,7 +3,7 @@
   (function() {
     var choice, questions, quizApp, serverRoot;
     quizApp = angular.module('quizApp', ['ui.bootstrap']);
-    serverRoot = 'http://localhost:2113';
+    serverRoot = 'https://localhost:2113';
     choice = function(text, correct) {
       if (correct !== true) {
         correct = false;
@@ -16,6 +16,9 @@
     };
     quizApp.controller('quizController', function($rootScope, $scope, $http, Poller, questions) {
       var getAnswerStreamUri, pollAnswerStream, pollCurrentAnswers, updateAnswersArray;
+      $http.defaults.headers.post = {
+        'Content-Type': 'application/vnd.eventstore.events+json'
+      };
       $scope.questions = questions;
       $scope.question = questions[0];
       $scope.questionIndex = 0;
@@ -38,7 +41,7 @@
         value: 'Guest' + (Math.floor(Math.random() * 100000))
       };
       pollCurrentAnswers = Poller(2000, function() {
-        return serverRoot + '/projection/QuestionAnswerCoutns2/state';
+        return serverRoot + '/projection/QuestionAnswerCounts/state';
       });
       $scope.currentAnswers = pollCurrentAnswers.data;
       $scope.answerStream = [];

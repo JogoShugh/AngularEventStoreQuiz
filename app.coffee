@@ -1,7 +1,7 @@
 (->
   quizApp = angular.module('quizApp', ['ui.bootstrap'])
 
-  serverRoot = 'http://localhost:2113'
+  serverRoot = 'https://localhost:2113'
 
   choice = (text, correct) ->
     correct = false if correct isnt true 
@@ -10,6 +10,8 @@
     selected: false
 
   quizApp.controller 'quizController', ($rootScope, $scope, $http, Poller, questions) ->
+    $http.defaults.headers.post = 
+      'Content-Type': 'application/vnd.eventstore.events+json'
     $scope.questions = questions
     $scope.question = questions[0]
     $scope.questionIndex = 0;
@@ -28,7 +30,7 @@
     $scope.userName = value: 'Guest' + (Math.floor(Math.random() * 100000))
     
     pollCurrentAnswers = Poller(2000, ->
-      serverRoot + '/projection/QuestionAnswerCoutns2/state'
+      serverRoot + '/projection/QuestionAnswerCounts/state'
     )
 
     $scope.currentAnswers = pollCurrentAnswers.data
